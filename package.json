@@ -1,0 +1,42 @@
+{
+  "name": "pdf-vue3",
+  "version": "0.0.1",
+  "description": "vue3 pdf viewer",
+  "main": "./dist/pdf-vue3.js",
+  "scripts": {
+    "build": "vite build"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    "default": "./dist/pdf-vue3.js"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hymhub/pdf-vue3.git"
+  },
+  "author": "hym",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hymhub/pdf-vue3/issues"
+  },
+  "homepage": "https://github.com/hymhub/pdf-vue3#readme",
+  "keywords": [
+    "pdf-vue3",
+    "pdf",
+    "vue.js",
+    "viewer"
+  ],
+  "optionalDependencies": {
+    "canvas": "^2.11.2",
+    "path2d-polyfill": "^2.0.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.2.3",
+    "pdfjs-dist": "^3.7.107",
+    "vite": "^4.3.9",
+    "vue": "^3.3.4"
+  }
+}
