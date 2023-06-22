@@ -13,7 +13,7 @@ jobs:
         with:
           node-version: "16.x"
       - name: cd project
-        run: cd pdf-vue3-example
+        run: cd ./pdf-vue3-example
       - name: Install dependencies
         run: npm install
       - name: Build
