@@ -7,12 +7,12 @@ export default defineConfig({
   ],
   build: {
     lib: {
-      entry: 'src/index.js',
+      entry: 'src/index.ts',
       name: 'pdf-vue3',
       formats: ['es'],
     },
     rollupOptions: {
-      external: ['vue']
+      external: ['vue'],
     }
   }
-});
+})
