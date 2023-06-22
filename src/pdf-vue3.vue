@@ -344,7 +344,7 @@ const backToTop = () => {
       <slot v-if="slots.progress" name="progress" :loadRatio="loadRatio"></slot>
       <div
         v-else
-        style="width: 0%; height: 4px; transition: width 0.2s"
+        style="width: 0%; height: 4px; transition: all 0.2s"
         :style="{
           width: `${loadRatio}%`,
           opacity: loadRatio < 100 ? '1' : '0',
