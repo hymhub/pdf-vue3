@@ -124,7 +124,8 @@ const loadingTask = getDocument(option);
 
 const loadRatio = ref(0);
 loadingTask.onProgress = (progressData: any) => {
-  loadRatio.value = (progressData.loaded / progressData.total) * 100;
+  const ratio = (progressData.loaded / progressData.total) * 100;
+  loadRatio.value = ratio >= 100 ? 100 : ratio;
   emit("onProgress", loadRatio.value);
 };
 loadingTask.promise.then(() => {
