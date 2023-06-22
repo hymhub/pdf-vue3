@@ -22,7 +22,7 @@ watchEffect(() => {
     <PDF
       :pdf-width="isMobile ? '100%' : '768'"
       :row-gap="isMobile ? 4 : 8"
-      src="/mastering_javascript_design_patterns_fragment.pdf"
+      src="/pdf-vue3/mastering_javascript_design_patterns_fragment.pdf"
     >
     </PDF>
   </div>
