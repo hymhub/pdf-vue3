@@ -3,7 +3,7 @@ import {
   GlobalWorkerOptions,
   getDocument,
 } from "pdfjs-dist/legacy/build/pdf.min.js";
-import { ref, onMounted, onUnmounted, Ref, computed } from "vue";
+import { ref, onMounted, onUnmounted, Ref, computed, watch } from "vue";
 const workerSrc = new URL(
   "../node_modules/pdfjs-dist/legacy/build/pdf.worker.min.js",
   import.meta.url
@@ -99,38 +99,40 @@ const option: Option = {
   disableAutoFetch: props.disableAutoFetch,
 };
 
-if (props.src instanceof Uint8Array) {
-  option.data = props.src;
-} else if (props.src.endsWith(".pdf")) {
-  option.url = props.src;
-} else {
-  const binaryData = atob(
-    props.src.includes(",") ? props.src.split(",")[1] : props.src
-  );
-  const byteArray = new Uint8Array(binaryData.length);
-  for (let i = 0; i < binaryData.length; i++) {
-    byteArray[i] = binaryData.charCodeAt(i);
-  }
-  option.data = byteArray;
-}
-
-for (const key in option) {
-  if (option[key] === undefined) {
-    delete option[key];
-  }
-}
-
-const loadingTask = getDocument(option);
-
 const loadRatio = ref(0);
-loadingTask.onProgress = (progressData: any) => {
-  const ratio = (progressData.loaded / progressData.total) * 100;
-  loadRatio.value = ratio >= 100 ? 100 : ratio;
-  emit("onProgress", loadRatio.value);
+const loadingTask = ref<any>(null);
+const getDoc = () => {
+  if (props.src instanceof Uint8Array) {
+    option.data = props.src;
+  } else if (props.src.endsWith(".pdf")) {
+    option.url = props.src;
+  } else {
+    const binaryData = atob(
+      props.src.includes(",") ? props.src.split(",")[1] : props.src
+    );
+    const byteArray = new Uint8Array(binaryData.length);
+    for (let i = 0; i < binaryData.length; i++) {
+      byteArray[i] = binaryData.charCodeAt(i);
+    }
+    option.data = byteArray;
+  }
+
+  for (const key in option) {
+    if (option[key] === undefined) {
+      delete option[key];
+    }
+  }
+  loadRatio.value = 0;
+  loadingTask.value = getDocument(option);
+  loadingTask.value.onProgress = (progressData: any) => {
+    const ratio = (progressData.loaded / progressData.total) * 100;
+    loadRatio.value = ratio >= 100 ? 100 : ratio;
+    emit("onProgress", loadRatio.value);
+  };
+  loadingTask.value.promise.then(() => {
+    emit("onComplete");
+  });
 };
-loadingTask.promise.then(() => {
-  emit("onComplete");
-});
 
 const totalPages = ref(0);
 const currentPage = ref(1);
@@ -147,7 +149,7 @@ const renderPDF = async () => {
   renderComplete.value = false;
   try {
     if (!pdf) {
-      pdf = await loadingTask.promise;
+      pdf = await loadingTask.value.promise;
       const refs = [];
       for (let i = 0; i < pdf.numPages; i++) {
         refs.push(ref() as Ref<Array<HTMLCanvasElement>>);
@@ -247,12 +249,27 @@ const setWidth = () => {
   innerWidth.value = window.innerWidth;
   containerWidth.value = container.value.offsetWidth;
 };
+const isAddEvent = ref(false);
 onMounted(() => {
   dpr.value = window.devicePixelRatio || 1;
   viewportHeight.value = window.innerHeight;
   setWidth();
-  renderPDF();
-  window.addEventListener("resize", renderPDFWithDebounce);
+  if ((typeof props.src === 'string' && props.src.length > 0) || props.src instanceof Uint8Array) {
+    getDoc();
+    renderPDF();
+    window.addEventListener("resize", renderPDFWithDebounce);
+    isAddEvent.value = true;
+  }
+  watch(() => props.src, (src: string | Uint8Array) => {
+    if ((typeof src === 'string' && src.length > 0) || src instanceof Uint8Array) {
+      getDoc();
+      renderPDF();
+      if (!isAddEvent.value) {
+        window.addEventListener("resize", renderPDFWithDebounce);
+        isAddEvent.value = true;
+      }
+    }
+  })
 });
 
 onUnmounted(() => {

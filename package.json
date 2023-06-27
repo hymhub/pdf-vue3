@@ -1,6 +1,6 @@
 {
   "name": "pdf-vue3",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "vue3 pdf viewer",
   "main": "./dist/pdf-vue3.js",
   "types": "./dist/types/index.d.ts",
