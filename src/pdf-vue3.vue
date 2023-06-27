@@ -87,21 +87,20 @@ interface Option extends Record<string, any> {
   disableAutoFetch?: boolean;
 }
 
-const option: Option = {
-  httpHeaders: props.httpHeaders,
-  withCredentials: props.withCredentials,
-  password: props.password,
-  useSystemFonts: props.useSystemFonts,
-  stopAtErrors: props.stopAtErrors,
-  disableFontFace: props.disableFontFace,
-  disableRange: props.disableRange,
-  disableStream: props.disableStream,
-  disableAutoFetch: props.disableAutoFetch,
-};
-
 const loadRatio = ref(0);
 const loadingTask = ref<any>(null);
 const getDoc = () => {
+  const option: Option = {
+    httpHeaders: props.httpHeaders,
+    withCredentials: props.withCredentials,
+    password: props.password,
+    useSystemFonts: props.useSystemFonts,
+    stopAtErrors: props.stopAtErrors,
+    disableFontFace: props.disableFontFace,
+    disableRange: props.disableRange,
+    disableStream: props.disableStream,
+    disableAutoFetch: props.disableAutoFetch,
+  };
   if (props.src instanceof Uint8Array) {
     option.data = props.src;
   } else if (props.src.endsWith(".pdf")) {
@@ -276,7 +275,7 @@ onUnmounted(() => {
   clearTimeout(timer);
   clearTimeout(scrollTimer);
   cancelAnimationFrame(animFrameId);
-  window.removeEventListener("resize", renderPDFWithDebounce);
+  isAddEvent.value && window.removeEventListener("resize", renderPDFWithDebounce);
 });
 // --- back to top ---
 let animFrameId: number;

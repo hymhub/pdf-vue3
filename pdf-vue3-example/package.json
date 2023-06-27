@@ -8,7 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "pdf-vue3": "^1.0.3",
+    "pdf-vue3": "^1.0.4",
     "vue": "^3.2.47"
   },
   "devDependencies": {
