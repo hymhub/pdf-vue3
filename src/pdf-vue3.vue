@@ -100,6 +100,7 @@ const getDoc = () => {
     disableRange: props.disableRange,
     disableStream: props.disableStream,
     disableAutoFetch: props.disableAutoFetch,
+    cMapUrl: 'https://unpkg.com/pdfjs-dist@3.7.107/cmaps/'
   };
   if (props.src instanceof Uint8Array) {
     option.data = props.src;
