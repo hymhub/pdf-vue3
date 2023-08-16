@@ -1,13 +1,13 @@
 {
   "name": "pdf-vue3",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "description": "vue3 pdf viewer",
   "main": "./dist/pdf-vue3.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "import": "./dist/pdf-vue3"
+      "import": "./dist/pdf-vue3.js"
     }
   },
   "scripts": {

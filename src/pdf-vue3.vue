@@ -1,15 +1,8 @@
 <script setup lang="ts">
-import {
-  GlobalWorkerOptions,
-  getDocument,
-} from "pdfjs-dist/legacy/build/pdf.min.js";
-import { ref, onMounted, onUnmounted, Ref, computed, watch } from "vue";
-const workerSrc = new URL(
-  "../node_modules/pdfjs-dist/legacy/build/pdf.worker.min.js",
-  import.meta.url
-).href;
+import { ref, onUnmounted, Ref, computed, watch, onBeforeMount } from "vue";
 
-GlobalWorkerOptions.workerSrc = workerSrc;
+let GlobalWorkerOptions: any, getDocument: any;
+
 const dpr = ref(1);
 
 const props = withDefaults(
@@ -100,7 +93,7 @@ const getDoc = () => {
     disableRange: props.disableRange,
     disableStream: props.disableStream,
     disableAutoFetch: props.disableAutoFetch,
-    cMapUrl: 'https://unpkg.com/pdfjs-dist@3.7.107/cmaps/'
+    cMapUrl: "https://unpkg.com/pdfjs-dist@3.7.107/cmaps/",
   };
   if (props.src instanceof Uint8Array) {
     option.data = props.src;
@@ -250,33 +243,51 @@ const setWidth = () => {
   containerWidth.value = container.value.offsetWidth;
 };
 const isAddEvent = ref(false);
-onMounted(() => {
+onBeforeMount(async () => {
+  const pdfjs = (await import("pdfjs-dist/legacy/build/pdf.min.js")).default;
+  GlobalWorkerOptions = pdfjs.GlobalWorkerOptions;
+  getDocument = pdfjs.getDocument;
+  const workerSrc = new URL(
+    "../node_modules/pdfjs-dist/legacy/build/pdf.worker.min.js",
+    import.meta.url
+  ).href;
+  GlobalWorkerOptions.workerSrc = workerSrc;
   dpr.value = window.devicePixelRatio || 1;
   viewportHeight.value = window.innerHeight;
   setWidth();
-  if ((typeof props.src === 'string' && props.src.length > 0) || props.src instanceof Uint8Array) {
+  if (
+    (typeof props.src === "string" && props.src.length > 0) ||
+    props.src instanceof Uint8Array
+  ) {
     getDoc();
     renderPDF();
     window.addEventListener("resize", renderPDFWithDebounce);
     isAddEvent.value = true;
   }
-  watch(() => props.src, (src: string | Uint8Array) => {
-    if ((typeof src === 'string' && src.length > 0) || src instanceof Uint8Array) {
-      getDoc();
-      renderPDF();
-      if (!isAddEvent.value) {
-        window.addEventListener("resize", renderPDFWithDebounce);
-        isAddEvent.value = true;
+  watch(
+    () => props.src,
+    (src: string | Uint8Array) => {
+      if (
+        (typeof src === "string" && src.length > 0) ||
+        src instanceof Uint8Array
+      ) {
+        getDoc();
+        renderPDF();
+        if (!isAddEvent.value) {
+          window.addEventListener("resize", renderPDFWithDebounce);
+          isAddEvent.value = true;
+        }
       }
     }
-  })
+  );
 });
 
 onUnmounted(() => {
   clearTimeout(timer);
   clearTimeout(scrollTimer);
   cancelAnimationFrame(animFrameId);
-  isAddEvent.value && window.removeEventListener("resize", renderPDFWithDebounce);
+  isAddEvent.value &&
+    window.removeEventListener("resize", renderPDFWithDebounce);
 });
 // --- back to top ---
 let animFrameId: number;
