@@ -28,6 +28,7 @@ const props = withDefaults(
     scrollThreshold?: number;
     pdfWidth?: string;
     rowGap?: number;
+    page?: number;
   }>(),
   {
     src: undefined,
@@ -47,6 +48,7 @@ const props = withDefaults(
     scrollThreshold: 300,
     pdfWidth: "100%",
     rowGap: 8,
+    page: 1,
   }
 );
 
@@ -56,6 +58,7 @@ const emit = defineEmits<{
   (e: "onProgress", loadRatio: number): void;
   (e: "onComplete"): void;
   (e: "onScroll", scrollOffset: number): void;
+  (e: "onPageChange", page: number): void;
 }>();
 
 const slots = defineSlots<{
@@ -181,6 +184,13 @@ const renderPDF = async () => {
       });
     } catch (error) {
       console.error("Error rendering PDF:", error);
+    }
+    if (
+      props.page &&
+      (i === props.page - 1 ||
+        (props.page > totalPages.value && i === totalPages.value - 1))
+    ) {
+      scroller.value.scrollTo(0, (itemHeightList.value[i - 1] ?? 0) + 2);
     }
     if (i === totalPages.value - 1) {
       renderComplete.value = true;
@@ -314,6 +324,38 @@ const backToTop = () => {
   cancelAnimationFrame(animFrameId);
   requestAnimationFrame(animateScroll);
 };
+let waitToPageFun: Function | null = null;
+watch(
+  () => props.page,
+  (page: number) => {
+    if (props.page === currentPage.value) {
+      return
+    }
+    if (page > itemHeightList.value.length) {
+      page = itemHeightList.value.length;
+    }
+    if (renderComplete.value) {
+      scroller.value.scrollTo(0, (itemHeightList.value[page - 2] ?? 0) + 2);
+    } else {
+      waitToPageFun = () => {
+        scroller.value.scrollTo(0, (itemHeightList.value[page - 2] ?? 0) + 2);
+      };
+    }
+  }
+);
+watch(
+  () => renderComplete.value,
+  (complete: boolean) => {
+    complete && waitToPageFun?.();
+    waitToPageFun = null;
+  }
+);
+watch(
+  () => currentPage.value,
+  (page: number) => {
+    emit("onPageChange", page);
+  }
+);
 </script>
 
 <template>

@@ -42,6 +42,7 @@ import PDF from "pdf-vue3";
 | `scrollThreshold`  | Scrolling distance over how much to display the back to top button. The default value is `300`. |               `number`               |
 |     `pdfWidth`     | pdf page width. The default value is `100%`. |               `string`               |
 |      `rowGap`      | Line spacing between pdf pages. The default value is `8`. |               `number`               |
+|       `page`       | Controls the current page number, and supports responsive variables to dynamically change the page number. The default value is `1` | `number` |
 |   `httpHeaders`    | Basic authentication headers. |               `object`               |
 | `withCredentials`  | Indicates whether or not cross-site Access-Control requests should be made using credentials such as cookies or authorization headers. The default is `false`. |              `boolean`               |
 |     `password`     | For decrypting password-protected PDFs. |               `string`               |
@@ -59,6 +60,7 @@ import PDF from "pdf-vue3";
 |       `onProgress`        | listen to the pdf download progress, the parameters for `0-100`. | `loadRatio: number` |
 |       `onComplete`        | pdf download complete. | `-` |
 |       `onScroll`        | Listen to the pdf scrolling, the parameter is the current `scrollTop` value. | `scrollOffset: number` |
+|       `onPageChange`    | Listen for page number changes. | `page: number` |
 
 ### `Slots`
 

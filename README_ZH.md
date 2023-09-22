@@ -42,6 +42,7 @@ import PDF from "pdf-vue3";
 | `scrollThreshold`  | 滚动距离超过多少显示返回顶部的按钮。默认值是`300`。 |               `number`               |
 |     `pdfWidth`     | pdf页面宽度。默认值是 `100%`。 |               `string`               |
 |      `rowGap`      | pdf页面之间的行距。默认值是`8`。 |               `number`               |
+|       `page`       | 控制当前所在页码，支持响应式变量动态改变页码。默认值是 `1` | `number` |
 |   `httpHeaders`    | 设置 httpHeaders 信息 |               `object`               |
 | `withCredentials`  | 表示是否应该使用 cookies 或授权头等凭证进行跨站访问控制请求。默认为 `false`。 |              `boolean`               |
 |     `password`     | 用于解密受密码保护的PDF。 |               `string`               |
@@ -59,6 +60,7 @@ import PDF from "pdf-vue3";
 |       `onProgress`        | 监听 PDF 下载进度，参数为`0-100`。 | `loadRatio: number` |
 |       `onComplete`        | 听 PDF 下载完成。 | `-` |
 |       `onScroll`        | 监听 PDF 的滚动，参数是当前的`scrollTop`值。 | `scrollOffset: number` |
+|       `onPageChange`        | 监听页码改变。 | `page: number` |
 
 ### `插槽(Slots)`
 
