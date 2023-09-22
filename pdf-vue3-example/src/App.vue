@@ -5,6 +5,11 @@ import PDF from "pdf-vue3";
 const isMobile = ref(false);
 const page = ref(1);
 
+const handlePageChange = (newPage) => {
+  console.log(`new page: ${newPage}`);
+  page.value = newPage;
+};
+
 const resize = () => {
   isMobile.value = window.innerWidth < 768;
 };
@@ -25,12 +30,12 @@ watchEffect(() => {
       :pdf-width="isMobile ? '100%' : '768'"
       :row-gap="isMobile ? 4 : 8"
       src="/pdf-vue3/mastering_javascript_design_patterns_fragment.pdf"
-      @on-page-change="page => console.log(page)"
+      @on-page-change="handlePageChange"
     >
     </PDF>
     <div class="tool-bar">
       <p>Enter page number</p>
-      <input type="number" v-model="page">
+      <input type="number" v-model="page" />
     </div>
   </div>
 </template>
@@ -41,16 +46,18 @@ watchEffect(() => {
     right: 32px !important;
   }
 }
+
 .tool-bar {
   position: fixed;
   left: 16px;
   bottom: 16px;
-  background-color: rgba(255, 255, 255, .5);
+  background-color: rgba(255, 255, 255, 0.5);
   box-shadow: 0px 0px 2px #777;
   border-radius: 4px;
   line-height: 1em;
   padding: 8px;
 }
+
 .tool-bar > p {
   margin: 0 0 8px;
 }
