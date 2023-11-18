@@ -61,6 +61,7 @@ import PDF from "pdf-vue3";
 |       `onComplete`        | pdf download complete. | `-` |
 |       `onScroll`        | Listen to the pdf scrolling, the parameter is the current `scrollTop` value. | `scrollOffset: number` |
 |       `onPageChange`    | Listen for page number changes. | `page: number` |
+|       `onRendered`    | pdf is rendered. | `totalPages: number` |
 
 ### `Slots`
 
