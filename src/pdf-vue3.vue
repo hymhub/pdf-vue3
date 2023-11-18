@@ -59,6 +59,7 @@ const emit = defineEmits<{
   (e: "onComplete"): void;
   (e: "onScroll", scrollOffset: number): void;
   (e: "onPageChange", page: number): void;
+  (e: "onRendered", totalPages: number): void;
 }>();
 
 const slots = defineSlots<{
@@ -196,6 +197,7 @@ const renderPDF = async () => {
       renderComplete.value = true;
     }
   }
+  emit("onRendered", totalPages.value);
 };
 
 const viewportHeight = ref(0);
