@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onUnmounted, Ref, computed, watch, onBeforeMount } from "vue";
+import type { PDFDocumentProxy } from './index'
 
 let GlobalWorkerOptions: any, getDocument: any;
-
 const dpr = ref(1);
 
 const props = withDefaults(
@@ -59,7 +59,10 @@ const emit = defineEmits<{
   (e: "onComplete"): void;
   (e: "onScroll", scrollOffset: number): void;
   (e: "onPageChange", page: number): void;
-  (e: "onRendered", totalPages: number): void;
+  /**
+   * https://mozilla.github.io/pdf.js/api/draft/module-pdfjsLib-PDFDocumentProxy.html
+   */
+  (e: "onPdfInit", pdf: PDFDocumentProxy): void;
 }>();
 
 const slots = defineSlots<{
@@ -139,7 +142,7 @@ const itemHeightList = ref<Array<number>>([]);
 const scroller = ref<HTMLDivElement>() as Ref<HTMLDivElement>;
 const container = ref<HTMLDivElement>() as Ref<HTMLDivElement>;
 
-let pdf: any;
+let pdf: PDFDocumentProxy;
 const cancelRendering = ref(false);
 const renderComplete = ref(false);
 const renderPDF = async () => {
@@ -153,6 +156,7 @@ const renderPDF = async () => {
       }
       canvasRefs.value = refs;
       totalPages.value = pdf.numPages;
+      emit("onPdfInit", pdf);
     }
   } catch (error) {
     console.error("Error loadingTask PDF:", error);
@@ -180,7 +184,7 @@ const renderPDF = async () => {
       itemHeightList.value[i] = calcH +=
         scaledViewport.height / dpr.value + rowGap.value;
       await page.render({
-        canvasContext: context,
+        canvasContext: context as CanvasRenderingContext2D,
         viewport: scaledViewport,
       });
     } catch (error) {
@@ -197,7 +201,6 @@ const renderPDF = async () => {
       renderComplete.value = true;
     }
   }
-  emit("onRendered", totalPages.value);
 };
 
 const viewportHeight = ref(0);
@@ -331,7 +334,7 @@ watch(
   () => props.page,
   (page: number) => {
     if (props.page === currentPage.value) {
-      return
+      return;
     }
     if (page > itemHeightList.value.length) {
       page = itemHeightList.value.length;

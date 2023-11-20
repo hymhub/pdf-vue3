@@ -21,6 +21,15 @@ watchEffect(() => {
     window.removeEventListener("resize", resize);
   };
 });
+
+/**
+ *
+ * @param {import('pdf-vue3').PDFDocumentProxy} pdf - The PDF document proxy object.
+ * @returns {void}
+ */
+const handlePdfInit = (pdf) => {
+  console.log(pdf);
+};
 </script>
 
 <template>
@@ -30,6 +39,7 @@ watchEffect(() => {
       :pdf-width="isMobile ? '100%' : '768'"
       :row-gap="isMobile ? 4 : 8"
       src="/pdf-vue3/mastering_javascript_design_patterns_fragment.pdf"
+      @on-pdf-init="handlePdfInit"
       @on-page-change="handlePageChange"
     >
     </PDF>

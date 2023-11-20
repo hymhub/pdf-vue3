@@ -61,7 +61,7 @@ import PDF from "pdf-vue3";
 |       `onComplete`        | 听 PDF 下载完成。 | `-` |
 |       `onScroll`        | 监听 PDF 的滚动，参数是当前的`scrollTop`值。 | `scrollOffset: number` |
 |       `onPageChange`        | 监听页码改变。 | `page: number` |
-|       `onRendered`    | PDF 已渲染。 | `totalPages: number` |
+|       `onPdfInit`    | 监听 PDF 初始化。PDFDocumentProxy: https://mozilla.github.io/pdf.js/api/draft/module-pdfjsLib-PDFDocumentProxy.html | `pdf: PDFDocumentProxy` |
 
 ### `插槽(Slots)`
 
