@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onUnmounted, Ref, computed, watch, onBeforeMount } from "vue";
-import type { PDFDocumentProxy } from './index'
+import type { PDFDocumentProxy } from "./index";
 
 let GlobalWorkerOptions: any, getDocument: any;
 const dpr = ref(1);
@@ -29,6 +29,7 @@ const props = withDefaults(
     pdfWidth?: string;
     rowGap?: number;
     page?: number;
+    cMapUrl?: string;
   }>(),
   {
     src: undefined,
@@ -49,6 +50,7 @@ const props = withDefaults(
     pdfWidth: "100%",
     rowGap: 8,
     page: 1,
+    cMapUrl: "https://unpkg.com/pdfjs-dist@3.7.107/cmaps/",
   }
 );
 
@@ -100,7 +102,7 @@ const getDoc = () => {
     disableRange: props.disableRange,
     disableStream: props.disableStream,
     disableAutoFetch: props.disableAutoFetch,
-    cMapUrl: "https://unpkg.com/pdfjs-dist@3.7.107/cmaps/",
+    cMapUrl: props.cMapUrl,
   };
   if (props.src instanceof Uint8Array) {
     option.data = props.src;
@@ -295,6 +297,16 @@ onBeforeMount(async () => {
       }
     }
   );
+});
+
+defineExpose({
+  //user set pdfWidth but pdf is blurred
+  //when container resize and widnow not resize, you can call reload
+  reload: () => {
+    innerWidth.value = window.innerWidth - 2;
+    renderPDFWithDebounce();
+    setWidth();
+  },
 });
 
 onUnmounted(() => {
