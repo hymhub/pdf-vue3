@@ -43,6 +43,7 @@ import PDF from "pdf-vue3";
 |     `pdfWidth`     | pdf页面宽度。默认值是 `100%`。 |               `string`               |
 |      `rowGap`      | pdf页面之间的行距。默认值是`8`。 |               `number`               |
 |       `page`       | 控制当前所在页码，支持响应式变量动态改变页码。默认值是 `1` | `number` |
+|       `cMapUrl`    | 自定义cMapUrl。默认值是 `https://unpkg.com/pdfjs-dist@3.7.107/cmaps/` | `string` |
 |   `httpHeaders`    | 设置 httpHeaders 信息 |               `object`               |
 | `withCredentials`  | 表示是否应该使用 cookies 或授权头等凭证进行跨站访问控制请求。默认为 `false`。 |              `boolean`               |
 |     `password`     | 用于解密受密码保护的PDF。 |               `string`               |

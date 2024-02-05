@@ -43,6 +43,7 @@ import PDF from "pdf-vue3";
 |     `pdfWidth`     | pdf page width. The default value is `100%`. |               `string`               |
 |      `rowGap`      | Line spacing between pdf pages. The default value is `8`. |               `number`               |
 |       `page`       | Controls the current page number, and supports responsive variables to dynamically change the page number. The default value is `1` | `number` |
+|       `cMapUrl`    | Custom cMapUrl. The default value is `https://unpkg.com/pdfjs-dist@3.7.107/cmaps/` | `string` |
 |   `httpHeaders`    | Basic authentication headers. |               `object`               |
 | `withCredentials`  | Indicates whether or not cross-site Access-Control requests should be made using credentials such as cookies or authorization headers. The default is `false`. |              `boolean`               |
 |     `password`     | For decrypting password-protected PDFs. |               `string`               |
