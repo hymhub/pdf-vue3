@@ -106,7 +106,7 @@ const getDoc = () => {
   };
   if (props.src instanceof Uint8Array) {
     option.data = props.src;
-  } else if (props.src.endsWith(".pdf")) {
+  } else if (props.src.split('?')[0].endsWith(".pdf")) {
     option.url = props.src;
   } else {
     const binaryData = atob(
