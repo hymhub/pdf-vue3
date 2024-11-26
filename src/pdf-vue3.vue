@@ -90,7 +90,7 @@ interface Option extends Record<string, any> {
 }
 
 const loadRatio = ref(0);
-const loadingTask = ref<any>(null);
+let loadingTask: any = null;
 const getDoc = () => {
   const option: Option = {
     httpHeaders: props.httpHeaders,
@@ -106,7 +106,7 @@ const getDoc = () => {
   };
   if (props.src instanceof Uint8Array) {
     option.data = props.src;
-  } else if (props.src.endsWith(".pdf")) {
+  } else if (props.src.toLowerCase().endsWith(".pdf")) {
     option.url = props.src;
   } else {
     const binaryData = atob(
@@ -125,13 +125,13 @@ const getDoc = () => {
     }
   }
   loadRatio.value = 0;
-  loadingTask.value = getDocument(option);
-  loadingTask.value.onProgress = (progressData: any) => {
+  loadingTask = getDocument(option);
+  loadingTask.onProgress = (progressData: any) => {
     const ratio = (progressData.loaded / progressData.total) * 100;
     loadRatio.value = ratio >= 100 ? 100 : ratio;
     emit("onProgress", loadRatio.value);
   };
-  loadingTask.value.promise.then(() => {
+  loadingTask.promise.then(() => {
     emit("onComplete");
   });
 };
@@ -144,21 +144,21 @@ const itemHeightList = ref<Array<number>>([]);
 const scroller = ref<HTMLDivElement>() as Ref<HTMLDivElement>;
 const container = ref<HTMLDivElement>() as Ref<HTMLDivElement>;
 
-let pdf: PDFDocumentProxy;
+let pdf: PDFDocumentProxy|null = null;
 const cancelRendering = ref(false);
 const renderComplete = ref(false);
 const renderPDF = async () => {
   renderComplete.value = false;
   try {
     if (!pdf) {
-      pdf = await loadingTask.value.promise;
+      pdf = await loadingTask.promise;
       const refs = [];
-      for (let i = 0; i < pdf.numPages; i++) {
+      for (let i = 0; i < pdf!.numPages; i++) {
         refs.push(ref() as Ref<Array<HTMLCanvasElement>>);
       }
       canvasRefs.value = refs;
-      totalPages.value = pdf.numPages;
-      emit("onPdfInit", pdf);
+      totalPages.value = pdf!.numPages;
+      emit("onPdfInit", pdf!);
     }
   } catch (error) {
     console.error("Error loadingTask PDF:", error);
@@ -166,7 +166,7 @@ const renderPDF = async () => {
   let calcH = 0;
   for (let i = 0; i < totalPages.value; i++) {
     try {
-      const page = await pdf.getPage(i + 1);
+      const page = await pdf!.getPage(i + 1);
       // ----
       if (cancelRendering.value) {
         cancelRendering.value = false;
@@ -313,6 +313,9 @@ onUnmounted(() => {
   clearTimeout(timer);
   clearTimeout(scrollTimer);
   cancelAnimationFrame(animFrameId);
+  pdf = null
+  loadingTask?.destroy?.();
+  loadingTask = null;
   isAddEvent.value &&
     window.removeEventListener("resize", renderPDFWithDebounce);
 });

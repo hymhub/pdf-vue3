@@ -9,5 +9,9 @@ export default defineConfig({
     host:'0.0.0.0',
     cors: true,
     open: true,
+    fs: {
+      // Allow serving files from one level up to the project root
+      allow: ['..'],
+    }
   }
 })
