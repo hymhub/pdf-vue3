@@ -85,8 +85,18 @@ const props = withDefaults(
   }
 );
 
-const rowGap = computed(() => parseInt(String(props.rowGap)));
-const scaleProp = computed(() => Number(props.scale) || 1);
+const rowGap = computed(() => {
+  const gap = Number(props.rowGap);
+  return Number.isFinite(gap) ? Math.max(0, gap) : 8;
+});
+const preloadPageCount = computed(() => {
+  const count = Number(props.preloadPages);
+  return Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+});
+const scaleProp = computed(() => {
+  const scale = Number(props.scale);
+  return Number.isFinite(scale) && scale > 0 ? scale : 1;
+});
 
 const emit = defineEmits<{
   (e: "onProgress", loadRatio: number): void;
@@ -148,12 +158,15 @@ const loadRatio = ref(0);
 // which is heavy and was a source of the memory leak reported in #18.
 let loadingTask: any = null;
 let pdfDoc: PDFDocumentProxy | null = null;
+let documentRunId = 0;
+let renderRunId = 0;
 
 const totalPages = ref(0);
 const currentPage = ref(1);
 const scrollOffset = ref(0);
 const pagesMeta = shallowRef<PageMeta[]>([]);
 const canvasEls = shallowRef<Array<HTMLCanvasElement | null>>([]);
+const canvasRefSetters = new Map<number, (el: unknown) => void>();
 
 const scroller = ref<HTMLDivElement>() as Ref<HTMLDivElement>;
 const container = ref<HTMLDivElement>() as Ref<HTMLDivElement>;
@@ -161,6 +174,7 @@ const container = ref<HTMLDivElement>() as Ref<HTMLDivElement>;
 const isDestroyed = ref(false);
 const isInitialized = ref(false);
 const renderComplete = ref(false);
+let waitToPageFun: (() => void) | null = null;
 
 const isUrlLike = (s: string): boolean => {
   if (!s) return false;
@@ -169,6 +183,8 @@ const isUrlLike = (s: string): boolean => {
   if (/^file:/i.test(s)) return true;
   if (/^\/\//.test(s)) return true;
   if (/^\.{0,2}\//.test(s)) return true;
+  if (/[?#]/.test(s)) return true;
+  if (s.includes("/")) return true;
   return false;
 };
 
@@ -179,12 +195,17 @@ const isDataUri = (s: string): boolean => {
 const isBase64Like = (s: string): boolean => {
   // Strip data URI prefix when present
   const stripped = s.includes(",") ? s.split(",")[1] : s;
+  const normalized = stripped.replace(/\s/g, "");
   // Must be reasonably long and only contain base64 chars
-  return stripped.length > 0 && /^[A-Za-z0-9+/=\s]+$/.test(stripped);
+  return (
+    normalized.length > 32 &&
+    normalized.startsWith("JVBERi0") &&
+    /^[A-Za-z0-9+/=]+$/.test(normalized)
+  );
 };
 
 const base64ToBytes = (raw: string): Uint8Array => {
-  const data = raw.includes(",") ? raw.split(",")[1] : raw;
+  const data = (raw.includes(",") ? raw.split(",")[1] : raw).replace(/\s/g, "");
   const binaryData = atob(data);
   const byteArray = new Uint8Array(binaryData.length);
   for (let i = 0; i < binaryData.length; i++) {
@@ -210,7 +231,7 @@ const buildLoadOption = (): Option => {
   if (props.src instanceof Uint8Array) {
     option.data = props.src;
   } else if (typeof props.src === "string") {
-    if (isDataUri(props.src) || (!isUrlLike(props.src) && isBase64Like(props.src))) {
+    if (isDataUri(props.src) || isBase64Like(props.src)) {
       option.data = base64ToBytes(props.src);
     } else {
       // Treat anything that looks like a URL (http(s)/blob/file/relative) as a URL.
@@ -226,15 +247,34 @@ const buildLoadOption = (): Option => {
   return option;
 };
 
-const getDoc = () => {
-  if (isDestroyed.value) return;
+const hasValidSrc = (src: string | Uint8Array | undefined) => {
+  return (typeof src === "string" && src.length > 0) || src instanceof Uint8Array;
+};
+
+const resetViewerState = () => {
+  pagesMeta.value = [];
+  canvasEls.value = [];
+  canvasRefSetters.clear();
+  pageTops.value = [];
+  totalHeight.value = 0;
+  totalPages.value = 0;
+  currentPage.value = 1;
+  scrollOffset.value = 0;
+  renderComplete.value = false;
+  waitToPageFun = null;
+};
+
+const getDoc = (): number | null => {
+  if (isDestroyed.value) return null;
   cleanupExistingDoc();
+  const runId = ++documentRunId;
   const option = buildLoadOption();
   loadRatio.value = 0;
   try {
     loadingTask = getDocument(option);
+    const task = loadingTask;
     loadingTask.onProgress = (progressData: any) => {
-      if (isDestroyed.value) return;
+      if (isDestroyed.value || runId !== documentRunId || loadingTask !== task) return;
       const total = progressData.total || 0;
       const loaded = progressData.loaded || 0;
       const ratio = total > 0 ? (loaded / total) * 100 : 0;
@@ -243,19 +283,21 @@ const getDoc = () => {
     };
     loadingTask.promise.then(
       () => {
-        if (isDestroyed.value) return;
+        if (isDestroyed.value || runId !== documentRunId || loadingTask !== task) return;
         loadRatio.value = 100;
         emit("onComplete");
       },
       (err: Error) => {
-        if (isDestroyed.value) return;
+        if (isDestroyed.value || runId !== documentRunId || loadingTask !== task) return;
         console.error("[pdf-vue3] load failed:", err);
         emit("onError", err);
       }
     );
+    return runId;
   } catch (err) {
     console.error("[pdf-vue3] failed to create loading task:", err);
     emit("onError", err as Error);
+    return null;
   }
 };
 
@@ -283,15 +325,23 @@ const recomputeLayout = () => {
 };
 
 /** Load metadata (viewport) for all pages and compute layout. */
-const loadAllPageMeta = async () => {
-  if (!pdfDoc) return;
-  const num = pdfDoc.numPages;
+const loadAllPageMeta = async (runId: number, doc: PDFDocumentProxy) => {
+  if (!doc || runId !== documentRunId) return;
+  const num = doc.numPages;
   const metas: PageMeta[] = [];
   for (let i = 1; i <= num; i++) {
-    if (isDestroyed.value) return;
+    if (isDestroyed.value || runId !== documentRunId) return;
+    let page: PDFPageProxy | null = null;
     try {
-      const page: PDFPageProxy = await pdfDoc.getPage(i);
-      const v = page.getViewport({ scale: 1 });
+      const loadedPage: PDFPageProxy = await doc.getPage(i);
+      page = loadedPage;
+      if (isDestroyed.value || runId !== documentRunId) {
+        try {
+          loadedPage.cleanup();
+        } catch (e) {}
+        return;
+      }
+      const v = loadedPage.getViewport({ scale: 1 });
       const fit = computeFitScale(v.width);
       metas.push({
         baseWidth: v.width,
@@ -303,8 +353,15 @@ const loadAllPageMeta = async () => {
         rendered: false,
         inView: false,
       });
-      page.cleanup();
+      loadedPage.cleanup();
+      page = null;
     } catch (err) {
+      if (isDestroyed.value || runId !== documentRunId) {
+        try {
+          page?.cleanup();
+        } catch (e) {}
+        return;
+      }
       console.error(`[pdf-vue3] failed to read page ${i} meta:`, err);
       emit("onError", err as Error);
       metas.push({
@@ -319,7 +376,7 @@ const loadAllPageMeta = async () => {
       });
     }
   }
-  if (isDestroyed.value) return;
+  if (isDestroyed.value || runId !== documentRunId) return;
   pagesMeta.value = metas;
   canvasEls.value = new Array(metas.length).fill(null);
   recomputeLayout();
@@ -327,11 +384,23 @@ const loadAllPageMeta = async () => {
 
 /** Pending render tasks keyed by page index (0-based). */
 const renderTasks = new Map<number, any>();
+const renderSettledPromises = new Map<number, Promise<void>>();
+const renderStarts = new Map<number, number>();
 
 /** In-flight page proxies (so we can cleanup them). */
 const livePages = new Map<number, PDFPageProxy>();
 
-const cancelRender = (idx: number) => {
+const waitForRenderToSettle = async (idx: number) => {
+  const pending = renderSettledPromises.get(idx);
+  if (!pending) return;
+  try {
+    await pending;
+  } catch (e) {
+    // Render cancellation/errors are handled by the original render caller.
+  }
+};
+
+const cancelRender = (idx: number): Promise<void> => {
   const t = renderTasks.get(idx);
   if (t) {
     try {
@@ -339,71 +408,119 @@ const cancelRender = (idx: number) => {
     } catch (e) {
       // ignore
     }
-    renderTasks.delete(idx);
+    return waitForRenderToSettle(idx);
   }
+  return Promise.resolve();
 };
 
-const releasePage = (idx: number) => {
-  cancelRender(idx);
-  const p = livePages.get(idx);
-  if (p) {
+const shouldReleasePage = (idx: number) => {
+  const canvas = canvasEls.value[idx];
+  return (
+    !!pagesMeta.value[idx]?.rendered ||
+    renderTasks.has(idx) ||
+    renderSettledPromises.has(idx) ||
+    renderStarts.has(idx) ||
+    livePages.has(idx) ||
+    !!(canvas && (canvas.width || canvas.height))
+  );
+};
+
+const releasePage = async (idx: number, runId = renderRunId) => {
+  const meta = pagesMeta.value[idx];
+  if (meta) meta.rendered = false;
+  const page = livePages.get(idx);
+  const canvas = canvasEls.value[idx];
+  await cancelRender(idx);
+  if (isDestroyed.value || runId !== renderRunId) return;
+  if (page && livePages.get(idx) === page) {
     try {
-      p.cleanup();
+      page.cleanup();
     } catch (e) {
       // ignore
     }
     livePages.delete(idx);
   }
-  const meta = pagesMeta.value[idx];
-  if (meta) meta.rendered = false;
-  const c = canvasEls.value[idx];
-  if (c) {
-    const ctx = c.getContext("2d");
+  if (canvas) {
+    const ctx = canvas.getContext("2d");
     if (ctx) {
       try {
-        ctx.clearRect(0, 0, c.width, c.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
       } catch (e) {
         // ignore
       }
     }
     // Drop pixel data to free memory
-    c.width = 0;
-    c.height = 0;
+    canvas.width = 0;
+    canvas.height = 0;
   }
 };
 
-const renderPage = async (idx: number) => {
-  if (isDestroyed.value || !pdfDoc) return;
+const renderPage = async (idx: number, runId = renderRunId) => {
+  if (isDestroyed.value || runId !== renderRunId || !pdfDoc) return;
   const meta = pagesMeta.value[idx];
-  if (!meta || meta.rendered) return;
+  if (!meta || meta.rendered || renderStarts.get(idx) === runId) return;
   const canvas = canvasEls.value[idx];
   if (!canvas) return;
-  cancelRender(idx);
+  renderStarts.set(idx, runId);
+  await cancelRender(idx);
+  if (isDestroyed.value || runId !== renderRunId || !pdfDoc) {
+    if (renderStarts.get(idx) === runId) renderStarts.delete(idx);
+    return;
+  }
+  const activeCanvas = canvasEls.value[idx];
+  if (!activeCanvas || activeCanvas !== canvas || pagesMeta.value[idx] !== meta) {
+    if (renderStarts.get(idx) === runId) renderStarts.delete(idx);
+    return;
+  }
+  let page: PDFPageProxy | null = null;
   try {
-    const page = await pdfDoc.getPage(idx + 1);
-    if (isDestroyed.value) {
+    const loadedPage: PDFPageProxy = await pdfDoc.getPage(idx + 1);
+    page = loadedPage;
+    if (isDestroyed.value || runId !== renderRunId || canvasEls.value[idx] !== canvas) {
       try {
-        page.cleanup();
+        loadedPage.cleanup();
       } catch (e) {}
       return;
     }
-    livePages.set(idx, page);
+    livePages.set(idx, loadedPage);
     const finalScale = meta.finalScale;
-    const viewport = page.getViewport({ scale: finalScale });
+    const viewport = loadedPage.getViewport({ scale: finalScale });
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     canvas.style.width = meta.renderWidth + "px";
     canvas.style.height = meta.renderHeight + "px";
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const task = page.render({
+    const task = loadedPage.render({
       canvasContext: ctx as CanvasRenderingContext2D,
       viewport,
     });
     renderTasks.set(idx, task);
+    const settledPromise = task.promise
+      .catch(() => {
+        // The awaiting renderPage call handles the error.
+      })
+      .finally(() => {
+        if (renderTasks.get(idx) === task) {
+          renderTasks.delete(idx);
+        }
+        if (renderSettledPromises.get(idx) === settledPromise) {
+          renderSettledPromises.delete(idx);
+        }
+      });
+    renderSettledPromises.set(idx, settledPromise);
     await task.promise;
-    renderTasks.delete(idx);
-    if (isDestroyed.value) return;
+    if (renderTasks.get(idx) === task) {
+      renderTasks.delete(idx);
+    }
+    if (
+      isDestroyed.value ||
+      runId !== renderRunId ||
+      canvasEls.value[idx] !== canvas ||
+      pagesMeta.value[idx] !== meta
+    ) {
+      return;
+    }
     meta.rendered = true;
   } catch (err: any) {
     if (err?.name === "RenderingCancelledException") {
@@ -411,6 +528,16 @@ const renderPage = async (idx: number) => {
     }
     console.error(`[pdf-vue3] failed to render page ${idx + 1}:`, err);
     emit("onError", err);
+  } finally {
+    if (renderStarts.get(idx) === runId) {
+      renderStarts.delete(idx);
+    }
+    if (livePages.get(idx) === page) {
+      try {
+        page?.cleanup();
+      } catch (e) {}
+      livePages.delete(idx);
+    }
   }
 };
 
@@ -444,7 +571,7 @@ const computeVisibleRange = (): { start: number; end: number } => {
     }
   }
   if (end < start) end = start;
-  const pre = Math.max(0, props.preloadPages || 0);
+  const pre = preloadPageCount.value;
   return {
     start: Math.max(0, start - pre),
     end: Math.min(metas.length - 1, end + pre),
@@ -456,6 +583,7 @@ const updateInView = () => {
   if (isDestroyed.value) return;
   const metas = pagesMeta.value;
   if (!metas.length) return;
+  const runId = renderRunId;
   const { start, end } = computeVisibleRange();
   const useVirtual = props.virtual !== false;
   const targetStart = useVirtual ? start : 0;
@@ -474,19 +602,20 @@ const updateInView = () => {
   pagesMeta.value = [...metas];
 
   void nextTick(() => {
+    if (isDestroyed.value || runId !== renderRunId) return;
     for (let i = targetStart; i <= targetEnd; i++) {
       const m = metas[i];
       if (m && !m.rendered) {
-        void renderPage(i);
+        void renderPage(i, runId);
       }
     }
     if (useVirtual) {
       // Release pages well outside the window to keep memory bounded.
-      const releaseRadius = (props.preloadPages || 0) + 2;
+      const releaseRadius = preloadPageCount.value + 2;
       for (let i = 0; i < metas.length; i++) {
         if (i < targetStart - releaseRadius || i > targetEnd + releaseRadius) {
-          if (metas[i].rendered) {
-            releasePage(i);
+          if (shouldReleasePage(i)) {
+            void releasePage(i, runId);
           }
         }
       }
@@ -527,8 +656,11 @@ const handleScroll = (event: Event) => {
 };
 
 const cleanupExistingDoc = () => {
+  documentRunId++;
+  renderRunId++;
+  renderStarts.clear();
   for (const idx of Array.from(renderTasks.keys())) {
-    cancelRender(idx);
+    void cancelRender(idx);
   }
   for (const idx of Array.from(livePages.keys())) {
     try {
@@ -554,22 +686,28 @@ const cleanupExistingDoc = () => {
 };
 
 /** Full rebuild: load doc -> read all page metas -> set up virtual scroll. */
-const renderPDF = async () => {
+const renderPDF = async (runId: number | null) => {
+  if (runId === null) return;
   renderComplete.value = false;
   try {
-    if (!loadingTask) return;
-    pdfDoc = await loadingTask.promise;
-    if (isDestroyed.value || !pdfDoc) return;
-    totalPages.value = pdfDoc.numPages;
-    emit("onPdfInit", pdfDoc);
-    await loadAllPageMeta();
-    if (isDestroyed.value) return;
+    const task = loadingTask;
+    if (!task) return;
+    const doc = await task.promise;
+    if (isDestroyed.value || runId !== documentRunId || loadingTask !== task) return;
+    pdfDoc = doc;
+    totalPages.value = doc.numPages;
+    emit("onPdfInit", doc);
+    await loadAllPageMeta(runId, doc);
+    if (isDestroyed.value || runId !== documentRunId || pdfDoc !== doc) return;
     await nextTick();
     applyPageProp();
     updateInView();
-    renderComplete.value = true;
+    if (runId === documentRunId && pdfDoc === doc) {
+      renderComplete.value = true;
+    }
   } catch (err: any) {
     if (err?.name === "RenderingCancelledException") return;
+    if (runId !== documentRunId) return;
     console.error("[pdf-vue3] renderPDF failed:", err);
     emit("onError", err as Error);
   }
@@ -590,6 +728,8 @@ const reflow = () => {
     setWidth();
     return;
   }
+  const runId = ++renderRunId;
+  renderStarts.clear();
   setWidth();
   for (let i = 0; i < metas.length; i++) {
     const m = metas[i];
@@ -598,9 +738,7 @@ const reflow = () => {
     m.finalScale = fit * dpr.value;
     m.renderWidth = m.baseWidth * fit;
     m.renderHeight = m.baseHeight * fit;
-    if (m.rendered) {
-      releasePage(i);
-    }
+    void releasePage(i, runId);
   }
   pagesMeta.value = [...metas];
   recomputeLayout();
@@ -644,12 +782,9 @@ onBeforeMount(async () => {
     viewportHeight.value = window.innerHeight;
     await nextTick();
     setWidth();
-    const hasSrc =
-      (typeof props.src === "string" && props.src.length > 0) ||
-      props.src instanceof Uint8Array;
-    if (hasSrc) {
-      getDoc();
-      void renderPDF();
+    if (hasValidSrc(props.src)) {
+      const runId = getDoc();
+      void renderPDF(runId);
       window.addEventListener("resize", handleResize);
       isAddEvent.value = true;
     }
@@ -657,21 +792,26 @@ onBeforeMount(async () => {
     watch(
       () => props.src,
       (src: string | Uint8Array) => {
-        const ok =
-          (typeof src === "string" && src.length > 0) ||
-          src instanceof Uint8Array;
-        if (!ok) return;
-        getDoc();
-        void renderPDF();
+        if (!hasValidSrc(src)) {
+          cleanupExistingDoc();
+          resetViewerState();
+          return;
+        }
+        const runId = getDoc();
+        void renderPDF(runId);
         if (!isAddEvent.value) {
           window.addEventListener("resize", handleResize);
           isAddEvent.value = true;
         }
       }
     );
-    watch(scaleProp, () => {
+    watch([scaleProp, rowGap, () => props.pdfWidth], () => {
       if (!isInitialized.value) return;
       reflow();
+    });
+    watch([() => props.virtual, preloadPageCount], () => {
+      if (!isInitialized.value) return;
+      updateInView();
     });
   } catch (err) {
     console.error("[pdf-vue3] init failed:", err);
@@ -723,7 +863,6 @@ const scrollToPage = (page: number) => {
   scroller.value.scrollTo(0, y + 2);
 };
 
-let waitToPageFun: Function | null = null;
 watch(
   () => props.page,
   (page: number) => {
@@ -751,17 +890,32 @@ watch(
   }
 );
 
-const setCanvasRef = (idx: number) => (el: any) => {
-  if (!canvasEls.value) return;
+const updateCanvasRef = (idx: number, el: HTMLCanvasElement | null) => {
+  if (!canvasEls.value || canvasEls.value[idx] === el) return;
+  const oldCanvas = canvasEls.value[idx];
+  if (oldCanvas && oldCanvas !== el) {
+    void releasePage(idx);
+  }
   const arr = canvasEls.value.slice();
-  arr[idx] = (el as HTMLCanvasElement) || null;
+  arr[idx] = el;
   canvasEls.value = arr;
   // If the page was previously in view but lost its canvas (e.g. recreated by v-if),
   // re-render it.
   const meta = pagesMeta.value[idx];
   if (el && meta && meta.inView && !meta.rendered) {
-    void renderPage(idx);
+    void renderPage(idx, renderRunId);
   }
+};
+
+const setCanvasRef = (idx: number) => {
+  let setter = canvasRefSetters.get(idx);
+  if (!setter) {
+    setter = (el: unknown) => {
+      updateCanvasRef(idx, el instanceof HTMLCanvasElement ? el : null);
+    };
+    canvasRefSetters.set(idx, setter);
+  }
+  return setter;
 };
 
 const print = async () => {
@@ -848,13 +1002,7 @@ defineExpose({
   /** Manually destroy the loaded document (a new load will start when `src` changes). */
   destroy: () => {
     cleanupExistingDoc();
-    pagesMeta.value = [];
-    canvasEls.value = [];
-    pageTops.value = [];
-    totalHeight.value = 0;
-    totalPages.value = 0;
-    currentPage.value = 1;
-    renderComplete.value = false;
+    resetViewerState();
   },
 });
 </script>

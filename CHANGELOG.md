@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.0.1
+
+### Fixed
+
+- Fixed a PDF.js render lifecycle race that could throw
+  `Cannot use the same canvas during multiple render() operations` during
+  rapid scrolling, zooming, virtual list updates, or canvas ref recreation.
+- Wait for cancelled page render tasks to settle before reusing the same
+  canvas, and ignore stale async work after `src` changes, reloads, reflows,
+  and unmounts.
+- Fixed repeated Vue canvas ref updates that could trigger
+  `Maximum recursive updates exceeded` while the viewer was under heavy
+  scroll/zoom pressure.
+- Hardened `scale`, `rowGap`, and `preloadPages` normalization to prevent
+  invalid values from producing unstable layout state.
+- Tightened `src` detection so relative URLs and query-string URLs are kept as
+  URLs, while raw base64 PDF payloads are still decoded correctly.
+
 ## 2.0.0
 
 This is a major rewrite of the rendering pipeline focused on **performance for

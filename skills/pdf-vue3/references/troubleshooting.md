@@ -6,7 +6,7 @@
 
 **Cause:** the bundler reached the old `pdfjs-dist@3.7.107` build which contains `eval("require")(this.workerSrc)`.
 
-**Fix:** upgrade to `pdf-vue3@^2.0.0`. The internal pdfjs is now `4.10.38`, which has removed that pattern.
+**Fix:** upgrade to `pdf-vue3@^2.0.1`. The internal pdfjs is now `4.10.38`, which has removed that pattern.
 
 ## `The API version "X" does not match the Worker version "Y"`
 
@@ -21,7 +21,7 @@
 
 **Cause:** the `src` string was misclassified as base64 because it didn't end with `.pdf`. (This was the root cause of the v1.x bugs #1, #19, #22, #26, #29.)
 
-**Fix:** upgrade to `pdf-vue3@^2.0.0`. The new URL detection accepts:
+**Fix:** upgrade to `pdf-vue3@^2.0.1`. The new URL detection accepts:
 
 - `https://…`, `http://…`, `blob:…`, `file:…`
 - protocol-relative `//host/…`
@@ -35,7 +35,7 @@ If you're on v2 and still see this with a string that _is_ a URL, please file an
 
 **Cause:** v1.x kept rendering work alive after the component was unmounted, and tried to touch the DOM after Vue had removed it.
 
-**Fix:** upgrade to `pdf-vue3@^2.0.0`. v2 sets an `isDestroyed` guard and cancels in-flight render tasks on unmount.
+**Fix:** upgrade to `pdf-vue3@^2.0.1`. v2 sets an `isDestroyed` guard and cancels in-flight render tasks on unmount.
 
 ## `Failed to resolve component: PDF`
 
@@ -73,7 +73,7 @@ app.component('PDF', PDF)
 
 **Cause:** v1.x kept module-level shared state.
 
-**Fix:** upgrade to `pdf-vue3@^2.0.0`. Each component instance now has its own `loadingTask` / `PDFDocument` / page state.
+**Fix:** upgrade to `pdf-vue3@^2.0.1`. Each component instance now has its own `loadingTask` / `PDFDocument` / page state.
 
 ## "Nuxt 3 says `window is not defined`"
 

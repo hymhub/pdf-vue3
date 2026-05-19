@@ -60,4 +60,4 @@ Read these on demand, **only when relevant**:
 2. **Never** suggest CSS `transform: scale(...)` for zoom — it makes the canvas blurry. Use the `scale` prop instead (it triggers a real re-render).
 3. **Never** mutate `pdfRef.value.getPdf()` results directly. Treat the `PDFDocumentProxy` as read-only.
 4. When the user is on SSR / Nuxt, wrap `<PDF />` in `<ClientOnly>` (see `references/ssr.md`) unless they explicitly opt out and accept that no SSR markup will be produced for the canvas.
-5. If the user reports an `eval()` warning, confirm they are on `pdf-vue3@>=2.0.0`. The fix lives there.
+5. If the user reports an `eval()` warning, confirm they are on `pdf-vue3@>=2.0.1`. The fix lives there without the 2.0.0 render lifecycle regression.

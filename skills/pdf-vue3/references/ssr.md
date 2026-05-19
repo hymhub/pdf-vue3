@@ -77,7 +77,7 @@ You can copy the worker from `node_modules/pdfjs-dist/legacy/build/pdf.worker.mj
 Cause: rendering `<PDF />` outside of `<ClientOnly>` while Nuxt is generating
 static pages, **and** the user is on a `pdf-vue3@1.x` build.
 
-Fix: upgrade to `pdf-vue3@>=2.0.0` and/or wrap in `<ClientOnly>`.
+Fix: upgrade to `pdf-vue3@>=2.0.1` and/or wrap in `<ClientOnly>`.
 
 ### Hydration mismatch warning
 
