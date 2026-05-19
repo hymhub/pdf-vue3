@@ -1,5 +1,10 @@
 # pdf-vue3
 
+[![npm version](https://img.shields.io/npm/v/pdf-vue3.svg)](https://www.npmjs.com/package/pdf-vue3)
+[![npm monthly downloads](https://img.shields.io/npm/dm/pdf-vue3.svg)](https://www.npmjs.com/package/pdf-vue3)
+[![npm total downloads](https://img.shields.io/npm/dt/pdf-vue3.svg)](https://www.npmjs.com/package/pdf-vue3)
+[![license](https://img.shields.io/npm/l/pdf-vue3.svg)](https://www.npmjs.com/package/pdf-vue3)
+
 [English](./README.md) ｜ [中文](./README_ZH.md)
 
 A high-performance Vue 3 PDF viewer with virtual scrolling, smooth zooming, and a tiny API.
@@ -22,10 +27,10 @@ example: <https://hymhub.github.io/pdf-vue3/>
 ## Install
 
 ```bash
-  npm i pdf-vue3
+  npm i pdf-vue3@^2.0.1
 ```
 
-> v2.0.0+ requires Vue ^3.2 and a bundler that can load `.mjs` (Vite, Webpack 5, Rollup, etc.).
+> v2.0.1+ requires Vue ^3.2 and a bundler that can load `.mjs` (Vite, Webpack 5, Rollup, etc.). Avoid v2.0.0 because it has a known rendering lifecycle issue.
 
 ## Usage
 
@@ -141,7 +146,7 @@ const page = ref(1);
 
 ## Migration from 1.x
 
-v2.0.0 is mostly backward compatible. Existing props continue to work. Notable changes:
+v2.0.1 is mostly backward compatible. Existing props continue to work. Notable changes:
 
 - **Default behavior is now virtual scrolling**. If you depend on every canvas existing in the DOM, set `:virtual="false"`.
 - The internal `pdfjs-dist` is upgraded to **4.10.38**. This removes the `eval()` warning reported in #25 / #30 and the API-vs-Worker version mismatch (#10).

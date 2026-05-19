@@ -1,5 +1,10 @@
 # pdf-vue3
 
+[![npm version](https://img.shields.io/npm/v/pdf-vue3.svg)](https://www.npmjs.com/package/pdf-vue3)
+[![npm 月下载量](https://img.shields.io/npm/dm/pdf-vue3.svg)](https://www.npmjs.com/package/pdf-vue3)
+[![npm 总下载量](https://img.shields.io/npm/dt/pdf-vue3.svg)](https://www.npmjs.com/package/pdf-vue3)
+[![license](https://img.shields.io/npm/l/pdf-vue3.svg)](https://www.npmjs.com/package/pdf-vue3)
+
 [English](./README.md) ｜ [中文](./README_ZH.md)
 
 一个高性能 Vue 3 PDF 查看器，自带虚拟滚动、清晰缩放和极简 API。
@@ -22,10 +27,10 @@
 ## 安装
 
 ```bash
-  npm i pdf-vue3
+  npm i pdf-vue3@^2.0.1
 ```
 
-> v2.0.0+ 要求 Vue ^3.2 及一个支持 `.mjs` 的打包工具（Vite、Webpack 5、Rollup 等）。
+> v2.0.1+ 要求 Vue ^3.2 及一个支持 `.mjs` 的打包工具（Vite、Webpack 5、Rollup 等）。请避免使用 v2.0.0，该版本存在已知渲染生命周期问题。
 
 ## 使用
 
@@ -75,7 +80,7 @@ const page = ref(1);
 
 |      属性     | 描述 |                 类型                 |
 | :----------------: | :---------- | :----------------------------------: |
-|       `src`        | PDF 的 URL 或二进制数据（Uint8Array）或 BASE64 编码。v2.0.0 起会正确处理带查询参数的 URL、大写扩展名、S3 预签名 URL 和 `data:` URI。 | `string` \| `Uint8Array` \| `BASE64` |
+|       `src`        | PDF 的 URL 或二进制数据（Uint8Array）或 BASE64 编码。v2.0.1 起会正确处理带查询参数的 URL、大写扩展名、S3 预签名 URL 和 `data:` URI。 | `string` \| `Uint8Array` \| `BASE64` |
 |       `scale`      | 缩放倍率（1 = 100%）。页面会按新分辨率重绘以保持清晰。默认 `1`。 | `number` |
 |      `virtual`     | 是否启用虚拟列表，只渲染视口附近的页面。默认 `true`。 | `boolean` |
 |   `preloadPages`   | 启用虚拟列表时，视口上下额外预渲染的页数。默认 `2`。 | `number` |
@@ -141,7 +146,7 @@ const page = ref(1);
 
 ## 从 1.x 升级
 
-v2.0.0 大体保持向后兼容，原有 props 继续可用。主要变化：
+v2.0.1 大体保持向后兼容，原有 props 继续可用。主要变化：
 
 - **默认开启虚拟滚动**。如果你的代码依赖每个 canvas 都常驻 DOM，请显式设置 `:virtual="false"`。
 - 内置 `pdfjs-dist` 升级到 **4.10.38**，修复 #25 / #30 的 `eval()` 安全告警，以及 #10 的 API 与 Worker 版本不匹配。
