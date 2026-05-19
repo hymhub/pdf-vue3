@@ -12,10 +12,14 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: "20.x"
-      - name: Install dependencies
+      - name: Install package dependencies
+        run: npm install
+      - name: Build package
+        run: npm run build
+      - name: Install example dependencies
         working-directory: ./pdf-vue3-example
         run: npm install
-      - name: Build
+      - name: Build example
         working-directory: ./pdf-vue3-example
         run: npm run build
       - name: Deploy to GitHub Pages

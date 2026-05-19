@@ -1,6 +1,4 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-import { fileURLToPath } from 'node:url'
-
 export default defineNuxtConfig({
   devtools: { enabled: true },
   css: ['@/style.css'],
@@ -15,11 +13,6 @@ export default defineNuxtConfig({
     moduleSideEffects: ['pdfjs-dist'],
   },
   vite: {
-    resolve: {
-      alias: {
-        'pdf-vue3': fileURLToPath(new URL('../src/index.ts', import.meta.url)),
-      },
-    },
     optimizeDeps: {
       include: ['pdf-vue3'],
     },
