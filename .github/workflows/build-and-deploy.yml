@@ -3,13 +3,17 @@ on:
   push:
     branches:
       - main
+
+permissions:
+  contents: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Use Node.js 20.x
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: "20.x"
       - name: Install package dependencies
@@ -25,5 +29,5 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          personal_token: ${{ secrets.ACCESS_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./pdf-vue3-example/dist
