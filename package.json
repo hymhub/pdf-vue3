@@ -1,7 +1,7 @@
 {
   "name": "pdf-vue3",
-  "version": "1.0.12",
-  "description": "vue3 pdf viewer",
+  "version": "2.0.0",
+  "description": "A high-performance Vue 3 PDF viewer with virtual scrolling, supporting large PDFs, zoom, print, and more.",
   "main": "./dist/pdf-vue3.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
@@ -15,7 +15,8 @@
     "build": "vite build && npm run tsc"
   },
   "files": [
-    "dist"
+    "dist",
+    "skills"
   ],
   "type": "module",
   "repository": {
@@ -32,11 +33,15 @@
     "pdf-vue3",
     "pdf",
     "vue.js",
-    "viewer"
+    "viewer",
+    "vue3",
+    "pdfjs",
+    "virtual-scroll",
+    "large-pdf"
   ],
   "devDependencies": {
     "@vitejs/plugin-vue": "4.2.3",
-    "pdfjs-dist": "3.7.107",
+    "pdfjs-dist": "4.10.38",
     "vite": "4.3.9",
     "vue": "3.3.4",
     "vue-tsc": "1.8.0"

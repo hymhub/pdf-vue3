@@ -9,11 +9,11 @@
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {
-    "@nuxt/devtools": "latest",
-    "@types/node": "^18.17.3",
-    "nuxt": "^3.6.5"
+    "@nuxt/devtools": "^1.0.0",
+    "@types/node": "^20.10.0",
+    "nuxt": "^3.13.0"
   },
   "dependencies": {
-    "pdf-vue3": "^1.0.12"
+    "pdf-vue3": "^2.0.0"
   }
 }

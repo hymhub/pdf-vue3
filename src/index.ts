@@ -1,6 +1,28 @@
 import PDF from './pdf-vue3.vue';
 export default PDF;
 
+/**
+ * Reference to a PDF page in pdfjs-dist. We only declare the bits we actually use,
+ * everything else is allowed via index signature.
+ */
+export type PDFPageProxy = {
+  pageNumber: number;
+  getViewport(params: { scale: number; rotation?: number }): {
+    width: number;
+    height: number;
+    [key: string]: any;
+  };
+  render(params: {
+    canvasContext: CanvasRenderingContext2D;
+    viewport: any;
+    [key: string]: any;
+  }): { promise: Promise<void>; cancel: () => void; [key: string]: any };
+  getTextContent(params?: Record<string, any>): Promise<any>;
+  getAnnotations(params?: Record<string, any>): Promise<any[]>;
+  cleanup(): void;
+  [key: string]: any;
+};
+
 export type PDFDocumentProxy = {
   _pdfInfo: any;
   _transport: any;
